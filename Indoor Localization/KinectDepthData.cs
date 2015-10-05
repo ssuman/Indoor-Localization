@@ -14,7 +14,7 @@ namespace Indoor_Localization
         public int width;
         public int height;
         public int f = 600;
-
+        public double minDepth;
         public double maxDepth;
 
         public double [] depthLookup = new double[65536];
@@ -36,11 +36,12 @@ namespace Indoor_Localization
         {
             this.width = 640;
             this.height = 480;
-            this.fieldOfViewHorizontal = ConvertToRadians(57.0 / 2);
-            this.fieldOfViewVertical = ConvertToRadians(43.00 / 2);
+            this.fieldOfViewHorizontal = ConvertToRadians(57.0);
+            this.fieldOfViewVertical = ConvertToRadians(46.00);
             this.pointCloudLookups =  new List<Vector3D>();
             this.depthLookup = new double[65536];
             this.maxDepth = 1500;
+            this.minDepth = 0.4;
             initDepthReconstructionLookups();
         }
 
@@ -66,9 +67,9 @@ namespace Indoor_Localization
         {
             double h = 1.0 / f;
             double v = 1.0 / f;
-            double tanOfFieldOfViewHorizontal = Math.Tan(fieldOfViewHorizontal);
-            double tanOfFieldOfViewVertical = Math.Tan(fieldOfViewVertical);
-            double x, y, z = 1.0;
+            double tanOfFieldOfViewHorizontal = Math.Tan(fieldOfViewHorizontal/2.0);
+            double tanOfFieldOfViewVertical = Math.Tan(fieldOfViewVertical*0.5);
+            double x =1.0, y, z ;
             int ind;
 
             for (int row = 0; row < height; row++)
@@ -76,8 +77,8 @@ namespace Indoor_Localization
                 for (int col = 0; col < width; col++)
                 {
                     ind = row * width + col;
-                    x = ((((double)col / (double)(width - 1.0)) * 0.5) - 1.0) * tanOfFieldOfViewHorizontal;
-                    y = (((double)row / (double)(height - 1.0) * 0.5) - 1.0) * tanOfFieldOfViewVertical;
+                    y = -((((double)col / (double)(width - 1.0)) * 0.5) - 1.0) * tanOfFieldOfViewHorizontal;
+                    z = -(((double)row / (double)(height - 1.0) * 0.5) - 1.0) * tanOfFieldOfViewVertical;
                     this.pointCloudLookups.Insert(ind, new Vector3D(x, y, z));
                 }
 
@@ -91,6 +92,13 @@ namespace Indoor_Localization
 
         public bool isValidDepthValue(int index, short[] depthImage)
         {
+            short depthImageVal = depthImage[index];
+            return depthImageVal <= maxDepth && depthImageVal > 0;
+        }
+
+        public bool isValidDepthValue(int col, int row, short[] depthImage)
+        {
+            int index = row * width + col;
             short depthImageVal = depthImage[index];
             return depthImageVal <= maxDepth && depthImageVal > 0;
         }

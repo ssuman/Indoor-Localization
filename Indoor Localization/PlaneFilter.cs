@@ -10,32 +10,36 @@ namespace Indoor_Localization
 {
     class PlaneFilter
     {
+        // Parameters for basic FSPF
         int maxPoints;
-        int numNeighborSamples;
+        double numSamples;
         int numLocalSamples;
-        int numGlobalSamples;
         int planeSize;
         double worldPlaneSize;
-        double minOffsetError;
+
+        double maxError;
+        int numNeighborSamples;
         double minInlierFraction;
+        double maxDepthDiff;
         double MAXRETRIES;
-        double numSamples;
+
+        int numGlobalSamples;
+        double minOffsetError;
         int numSampleLocations;
-        int maxError = 0;
-
-        int maxDepthDiff;
-
+  
         public PlaneFilter()
         {
             this.maxPoints = 2000;
+            this.numSamples = 200000;
             this.numNeighborSamples = 20000;
-            this.numLocalSamples = 80;
+            this.numLocalSamples = 50;
             this.numGlobalSamples = 60;
-
-            // This is in meters.
-            this.worldPlaneSize = 0.5;
+            this.planeSize = 60;
+            this.maxDepthDiff = 1.8;
+            this.maxError = 0.03;
+            this.worldPlaneSize = 2;
             this.minOffsetError = 0.02;
-
+            this.MAXRETRIES = 2;
             this.minInlierFraction = 0.8;
 
         }
@@ -126,10 +130,8 @@ namespace Indoor_Localization
 
                 double meanDepth = (p1.X + p2.X + p3.X) * 0.3333;
 
-
-                // TODO: sq function
-                sampleRadiusH = Math.Ceiling(sampleRadiusHFactor / meanDepth * Math.Sqrt(1 - sq(n.Y)));
-                sampleRadiusV = Math.Ceiling(sampleRadiusVFactor / meanDepth * Math.Sqrt(1 - sq(n.Z)));
+                sampleRadiusH = (int)Math.Ceiling(sampleRadiusHFactor / meanDepth * Math.Sqrt(1.0 - (n.Y * n.Y)));
+                sampleRadiusV = (int)Math.Ceiling(sampleRadiusVFactor / meanDepth * Math.Sqrt(1 - n.Z * n.Z));
                 rMin = (int)Math.Max(0, l1.Y - sampleRadiusV);
                 rMax = (int)Math.Min(data.height - 1, l1.Y + sampleRadiusV);
                 cMin = (int)Math.Max(0, l1.X - sampleRadiusH);
