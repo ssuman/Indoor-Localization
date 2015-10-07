@@ -40,7 +40,7 @@ namespace Indoor_Localization
             this.fieldOfViewVertical = ConvertToRadians(46.00);
             this.pointCloudLookups =  new List<Vector3D>();
             this.depthLookup = new double[65536];
-            this.maxDepth = 1500;
+            this.maxDepth = 8000;
             this.minDepth = 0.4;
             initDepthReconstructionLookups();
         }
@@ -60,7 +60,8 @@ namespace Indoor_Localization
         public Vector3D depthPixelTo3d(int index, short[] depthImage)
         {
             short depthImageVal = depthImage[index];
-            return depthLookup[depthImageVal] * pointCloudLookups.ElementAt(index);
+            //return depthLookup[depthImageVal] * pointCloudLookups.ElementAt(index);
+            return depthImageVal * 0.001 * pointCloudLookups.ElementAt(index);
         }
 
         public void initDepthReconstructionLookups()

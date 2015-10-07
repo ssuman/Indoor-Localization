@@ -29,7 +29,12 @@ namespace Indoor_Localization
         }
 
         private KinectSensor sensor;
+        short[] pixelData;
+        int minDepth;
+        int maxDepth;
 
+
+        int height;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             foreach (var potentialSensor in KinectSensor.KinectSensors)
@@ -66,20 +71,28 @@ namespace Indoor_Localization
 
                     int stride = depthFrame.Width * 2;
                     depthFrame.CopyPixelDataTo(pixelData);
-                    int minDepth = depthFrame.MinDepth;
-                    int maxDepth = depthFrame.MaxDepth;
-                    KinectDepthData depthData = new KinectDepthData();
-                    List<Vector3D> filteredPointCloud = new List<Vector3D>();
-                    List<Vector> pixelLocs = new List<Vector>();
-                    List<Vector3D> pointCloudNormals = new List<Vector3D>();
-                    List<Vector3D> outlierCloud = new List<Vector3D>();
-                    PlaneFilter filter = new PlaneFilter();
-                    filter.GenerateFilteredPointCloud(pixelData, filteredPointCloud, pixelLocs, pointCloudNormals, outlierCloud, depthData);
-                    //this.Image.Source = BitmapSource.Create(depthFrame.Width, depthFrame.Height,
-                    //    96, 96, PixelFormats.Gray16, null, pixelData, stride);
+                    this.pixelData = pixelData;
+                    this.maxDepth = depthFrame.MaxDepth;
+                    this.minDepth = depthFrame.MinDepth;
+                    this.Image.Source = BitmapSource.Create(depthFrame.Width, depthFrame.Height,
+                        96, 96, PixelFormats.Gray16, null, pixelData, stride);
                 }
             }
         }
 
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+
+            int minDepth = this.minDepth;
+            int maxDepth = this.maxDepth;
+            KinectDepthData depthData = new KinectDepthData();
+            List<Vector3D> filteredPointCloud = new List<Vector3D>();
+            List<Vector> pixelLocs = new List<Vector>();
+            List<Vector3D> pointCloudNormals = new List<Vector3D>();
+            List<Vector3D> outlierCloud = new List<Vector3D>();
+            PlaneFilter filter = new PlaneFilter();
+            pointCloudNormals = filter.GenerateSampledPointCloud(depthData, this.pixelData, pointCloudNormals, 20000);
+            //filter.GenerateFilteredPointCloud(pixelData, filteredPointCloud, pixelLocs, pointCloudNormals, outlierCloud, depthData);
+        }
     }
 }

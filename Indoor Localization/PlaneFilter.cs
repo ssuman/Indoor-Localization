@@ -8,6 +8,7 @@ using System.Windows.Media.Media3D;
 
 namespace Indoor_Localization
 {
+    
     class PlaneFilter
     {
         // Parameters for basic FSPF
@@ -39,12 +40,12 @@ namespace Indoor_Localization
             this.maxError = 0.03;
             this.worldPlaneSize = 2;
             this.minOffsetError = 0.02;
-            this.MAXRETRIES = 2;
+            this.MAXRETRIES = 4;
             this.minInlierFraction = 0.8;
 
         }
 
-        bool sampleLocation(KinectDepthData data, short[] depthImage, int index, int row, int col, Vector3D p,
+        ReturnSampledObject sampleLocation(KinectDepthData data, short[] depthImage, int index, Vector l1, Vector3D p,
           int rMin, int height, int cMin, int width)
         {
             int retries = 0;
@@ -54,10 +55,11 @@ namespace Indoor_Localization
             while ((!valid) && retries <= MAXRETRIES)
             {
                 Random rndm = new Random();
-                row = rMin + rndm.Next() % height;
-                col = cMin + rndm.Next() % width;
-                index = row * data.getWidth() + col;
-                valid = data.isValidDepthValue(index, depthImage);
+                l1.Y = rMin + rndm.Next() % height;
+                l1.X = cMin + rndm.Next() % width;
+                index = (int)l1.Y * data.getWidth() + (int)l1.X;
+                if(index > 0)
+                    valid = data.isValidDepthValue(index, depthImage);
                 retries++;
                 numSampleLocations++;
             }
@@ -67,7 +69,25 @@ namespace Indoor_Localization
                 Vector3D v3D = data.depthPixelTo3d(index, depthImage);
                 p = new Vector3D(v3D.X, v3D.Y, v3D.Z);
             }
-            return valid;
+            ReturnSampledObject rsmo = new ReturnSampledObject(l1, p, index, valid);
+            return rsmo;
+        }
+
+
+        public List<Vector3D> GenerateSampledPointCloud(KinectDepthData data, short[] depthData, List<Vector3D> pointCloud, int numPoints)
+        {
+            int ind=0;
+            Vector v = new Vector();
+            Vector3D p = new Vector3D();
+            for(int i = 0; i < numPoints; i++)
+            {
+                ReturnSampledObject object1 = sampleLocation(data, depthData, ind, v, p, 0, data.height - 1, 0, data.width - 1);
+                if (object1.valid)
+                {
+                    pointCloud.Add(object1.p);
+                }
+            }
+            return pointCloud;
         }
 
         public void GenerateFilteredPointCloud(short[] depthImage, List<Vector3D> filteredPointCloud,
@@ -112,30 +132,37 @@ namespace Indoor_Localization
             List<Vector> neighborhoodPixelLocs = new List<Vector>();
 
             double d;
-            int sampleRadiusH, sampleRadiusV, rMin, rMax, cMin, cMax, dR, dC;
+            double sampleRadiusH, sampleRadiusV, rMin, rMax, cMin, cMax, dR, dC;
 
             // numSamples not present
             for (int i = 0; numPoints < this.maxPoints && i < this.numSamples; i++)
             {
-                if (!sampleLocation(data, depthImage, ind1, (int)l1.Y, (int)l1.X, p1, (int)planeSizeH, (int)h2, (int)planeSizeH, (int)w2))
+                ReturnSampledObject object1 = sampleLocation(data, depthImage, ind1, l1, p1, (int)planeSizeH, (int)h2, (int)planeSizeH, (int)w2);
+                if (!object1.valid)
                     continue;
-                if (!sampleLocation(data, depthImage, ind2, (int)l2.Y, (int)l2.X, p2, (int)(l1.Y - planeSizeH), planeSize, (int)(l1.X - planeSizeH), planeSize))
+                ReturnSampledObject object2 = sampleLocation(data, depthImage, ind2, l2, p2, (int)(object1.l.Y - planeSizeH), 
+                    planeSize, (int)(object1.l.X - planeSizeH), planeSize);
+                if (!object2.valid)
                     continue;
-                if (!sampleLocation(data, depthImage, ind3, (int)l3.Y, (int)l3.X, p3, (int)(l1.Y - planeSizeH), planeSize, (int)(l1.X - planeSizeH), planeSize))
+                ReturnSampledObject object3 = sampleLocation(data, depthImage, ind3, l3, p3, (int)(object1.l.Y - planeSizeH), 
+                    planeSize, (int)(object1.l.X - planeSizeH), planeSize);
+                if (!object3.valid)
                     continue;
-
+                p1 = object1.p;
+                p2 = object2.p;
+                p3 = object3.p;
                 Vector3D n = Vector3D.CrossProduct((p1 - p2), (p3 - p2));
 
                 d = Vector3D.DotProduct(p1, n);
 
-                double meanDepth = (p1.X + p2.X + p3.X) * 0.3333;
+                double meanDepth = (p1.X + p2.X + p3.X) * 0.33333333;
 
-                sampleRadiusH = (int)Math.Ceiling(sampleRadiusHFactor / meanDepth * Math.Sqrt(1.0 - (n.Y * n.Y)));
-                sampleRadiusV = (int)Math.Ceiling(sampleRadiusVFactor / meanDepth * Math.Sqrt(1 - n.Z * n.Z));
-                rMin = (int)Math.Max(0, l1.Y - sampleRadiusV);
-                rMax = (int)Math.Min(data.height - 1, l1.Y + sampleRadiusV);
-                cMin = (int)Math.Max(0, l1.X - sampleRadiusH);
-                cMax = (int)Math.Min(data.width - 1, l1.X + sampleRadiusH);
+                sampleRadiusH = Math.Ceiling(sampleRadiusHFactor / meanDepth * Math.Sqrt(1.0 - (n.Y * n.Y)));
+                sampleRadiusV = Math.Ceiling(sampleRadiusVFactor / meanDepth * Math.Sqrt(1.0 - (n.Z * n.Z)));
+                rMin = Math.Max(0, l1.Y - sampleRadiusV);
+                rMax = Math.Min(data.height - 1, l1.Y + sampleRadiusV);
+                cMin = Math.Max(0, l1.X - sampleRadiusH);
+                cMax = Math.Min(data.width - 1, l1.X + sampleRadiusH);
                 dR = rMax - rMin;
                 dC = cMax - cMin;
 
@@ -151,13 +178,13 @@ namespace Indoor_Localization
                 {
 
                     int r, c, ind = 0;
-                    if (!sampleLocation(data, depthImage, ind, (int)l.Y, (int)l.X, p, rMin, dR, cMin, dC))
+                    ReturnSampledObject object4 = sampleLocation(data, depthImage, ind, l, p, (int)rMin, (int)dR, (int)cMin, (int)dC);
+                    if (!object4.valid)
                         continue;
 
-                    double err = Math.Abs(Vector3D.DotProduct(n, p) - d);
+                    double err = Math.Abs(Vector3D.DotProduct(n, object4.p) - d);
 
-                    // What is max DEpth Diff ?? What is filtered Parmas
-                    if (err < maxError && p.X < meanDepth + maxDepthDiff && p.X > meanDepth - maxDepthDiff)
+                    if (err < maxError && (p.X < meanDepth + maxDepthDiff) && (p.X > meanDepth - maxDepthDiff))
                     {
                         inliers++;
                         neighborhoodInliers.Add(new Vector3D(p.X, p.Y, p.Z));

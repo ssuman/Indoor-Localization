@@ -8,6 +8,7 @@
         Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded">
     <Grid>
         <Image Name="Image" Stretch="Fill" Margin="23,10,28,30"/>
-        
+        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Margin="135,249,0,0" VerticalAlignment="Top" Width="75" Click="button_Click"/>
+
     </Grid>
 </Window>
