@@ -5,10 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Indoor_Localization"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded">
-    <Grid>
-        <Image Name="Image" Stretch="Fill" Margin="23,10,28,30"/>
-        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Margin="135,249,0,0" VerticalAlignment="Top" Width="75" Click="button_Click"/>
+        Title="MainWindow" Height="515.789" Width="836.111" Loaded="Window_Loaded">
+    <Grid RenderTransformOrigin="0.781,0.552">
+        <Image Name="Image" Stretch="Fill" Margin="22,12,463,181" RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="0.568"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
+        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Margin="23,421,0,0" VerticalAlignment="Top" Width="75" Click="button_Click"/>
+        <Canvas x:Name="canvas1" HorizontalAlignment="Left" Height="263" Margin="434,40,0,0" VerticalAlignment="Top" Width="361"/>
 
     </Grid>
 </Window>
